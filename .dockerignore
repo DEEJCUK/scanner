@@ -1,0 +1,19 @@
+# Exclude development files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.git/
+.gitignore
+*.md
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Exclude data and logs (mounted as volumes)
+data/
+logs/
+*.db
+*.log

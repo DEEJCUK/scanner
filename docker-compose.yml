@@ -1,0 +1,32 @@
+services:
+  scanner:
+    build: .
+    image: scanner:latest
+    container_name: scanner
+    # run in background (detached) safely; do NOT request a TTY or stdin
+    tty: false
+    stdin_open: false
+    restart: unless-stopped
+    environment:
+      - DATA_DIR=/data
+      - LOG_FILE=/var/log/scanner.log
+      - DEBUG=1
+    volumes:
+      - ./data:/data
+      - ./network_scanner_app.py:/opt/scanner/network_scanner_app.py:ro
+      - ./requirements.txt:/opt/scanner/requirements.txt:ro
+      - ./scanner.log:/var/log/scanner.log
+    ports:
+      - 8881:8888
+    cap_add:
+      - NET_RAW
+    healthcheck:
+      test: [CMD-SHELL, curl -f http://localhost:8888/ || exit 1]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: 5m
+        max-file: 3

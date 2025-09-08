@@ -1,4 +1,4 @@
-# i wanted a really quick lightweight scanner i can run in docker so i Claude-ed this in a couple of hours, its for home use on my local network to help me keep an eye on ports opened when i spin up docker containers or K3s containers
+## i wanted a really quick lightweight scanner i can run in docker so i Claude-ed this in a couple of hours, its for home use on my local network to help me keep an eye on ports opened when i spin up docker containers or K3s containers
 
 ## Security Notice
 

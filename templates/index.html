@@ -1,0 +1,786 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Network Scanner</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: #f8f9fa;
+        color: #212529;
+        line-height: 1.5;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .header {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .header h1 {
+        color: #495057;
+        margin-bottom: 5px;
+      }
+      .header p {
+        color: #6c757d;
+      }
+      .controls {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr 150px 120px;
+        gap: 15px;
+        margin-bottom: 15px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+        color: #495057;
+      }
+      input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+      input:focus {
+        border-color: #007bff;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+      }
+      .buttons {
+        display: flex;
+        gap: 10px;
+      }
+      button {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+      }
+      .btn-primary {
+        background: #007bff;
+        color: white;
+      }
+      .btn-secondary {
+        background: #6c757d;
+        color: white;
+      }
+      .btn-danger {
+        background: #dc3545;
+        color: white;
+      }
+      button:hover {
+        opacity: 0.9;
+      }
+      .status {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .status.running {
+        border-left: 4px solid #28a745;
+      }
+      .status.idle {
+        border-left: 4px solid #6c757d;
+      }
+      .progress {
+        width: 100%;
+        height: 8px;
+        background: #e9ecef;
+        border-radius: 4px;
+        overflow: hidden;
+        margin: 10px 0;
+      }
+      .progress-bar {
+        height: 100%;
+        background: #007bff;
+        transition: width 0.3s;
+      }
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+      .stat {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .stat-number {
+        font-size: 2em;
+        font-weight: bold;
+        color: #007bff;
+      }
+      .stat-label {
+        color: #6c757d;
+        font-size: 0.9em;
+        margin-top: 5px;
+      }
+      .results {
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .results-header {
+        background: #f8f9fa;
+        padding: 15px 20px;
+        border-bottom: 1px solid #dee2e6;
+        font-weight: 600;
+      }
+      .host {
+        border-bottom: 1px solid #dee2e6;
+        padding: 15px 20px;
+      }
+      .host:last-child {
+        border-bottom: none;
+      }
+      .host-header {
+        font-weight: 600;
+        margin-bottom: 8px;
+      }
+      .host-info {
+        color: #6c757d;
+        font-size: 0.9em;
+        margin-bottom: 10px;
+      }
+      .services {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 5px;
+      }
+      .service {
+        background: #f8f9fa;
+        padding: 5px 10px;
+        border-radius: 3px;
+        font-family: monospace;
+        font-size: 0.85em;
+        border-left: 3px solid #007bff;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .service .meta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .indicator {
+        font-weight: 600;
+      }
+      .indicator.new {
+        color: #28a745;
+      } /* green check for new */
+      .indicator.ok {
+        color: #007bff;
+      } /* blue for existing */
+      .indicator.removed {
+        color: #dc3545;
+      } /* red cross for removed */
+      .indicator.filtered {
+        color: #f0ad4e;
+        font-weight: 700;
+      } /* orange for filtered */
+      .empty {
+        text-align: center;
+        padding: 40px;
+        color: #6c757d;
+      }
+      /* Legend styles */
+      .legend {
+        background: white;
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+        font-size: 13px;
+        color: #333;
+      }
+      .legend-row {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .legend-item {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-right: 12px;
+      }
+      .legend-box {
+        width: 14px;
+        height: 14px;
+        border-radius: 3px;
+        display: inline-block;
+      }
+      .legend-box.new {
+        background: #28a745;
+      } /* green */
+      .legend-box.ok {
+        background: #007bff;
+      } /* blue */
+      .legend-box.removed {
+        background: #dc3545;
+      } /* red */
+      .legend-box.filtered {
+        background: #f0ad4e;
+      } /* orange */
+      .legend-section {
+        margin-right: 18px;
+        color: #495057;
+      }
+      @media (max-width: 768px) {
+        .form-row {
+          grid-template-columns: 1fr;
+        }
+        .buttons {
+          justify-content: center;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Network Scanner</h1>
+        <p>Fast network discovery and port scanning</p>
+
+        <!-- Legend / Help moved to header -->
+        <div
+          class="legend-header"
+          style="margin-top: 15px; font-size: 13px; color: #6c757d"
+        >
+          <div
+            style="
+              display: flex;
+              gap: 20px;
+              align-items: center;
+              flex-wrap: wrap;
+            "
+          >
+            <div>
+              <strong style="color: #495057">Range types:</strong>
+              Single IP: 10.0.0.1 &nbsp;•&nbsp; CIDR: 192.168.1.0/24
+              &nbsp;•&nbsp; Short range: 10.0.0.1-50 (last octet) &nbsp;•&nbsp;
+              Full range: 10.0.0.1-10.0.0.50
+            </div>
+          </div>
+          <div
+            style="
+              display: flex;
+              gap: 20px;
+              align-items: center;
+              flex-wrap: wrap;
+              margin-top: 6px;
+            "
+          >
+            <div>
+              <strong style="color: #495057">Port types:</strong>
+              Well-known: 0-1023 &nbsp;•&nbsp; Registered: 1024-49151
+              &nbsp;•&nbsp; Dynamic: 49152-65535
+            </div>
+          </div>
+          <div
+            style="
+              display: flex;
+              gap: 20px;
+              align-items: center;
+              flex-wrap: wrap;
+              margin-top: 6px;
+            "
+          >
+            <div style="display: flex; align-items: center">
+              <strong style="color: #495057; margin-right: 8px"
+                >Indicators:</strong
+              >
+              <div style="display: flex; gap: 12px; align-items: center">
+                <div style="display: flex; gap: 4px; align-items: center">
+                  <span
+                    style="
+                      width: 12px;
+                      height: 12px;
+                      background: #28a745;
+                      border-radius: 2px;
+                      display: inline-block;
+                    "
+                  ></span>
+                  <span>new</span>
+                </div>
+                <div style="display: flex; gap: 4px; align-items: center">
+                  <span
+                    style="
+                      width: 12px;
+                      height: 12px;
+                      background: #007bff;
+                      border-radius: 2px;
+                      display: inline-block;
+                    "
+                  ></span>
+                  <span>ok</span>
+                </div>
+                <div style="display: flex; gap: 4px; align-items: center">
+                  <span
+                    style="
+                      width: 12px;
+                      height: 12px;
+                      background: #dc3545;
+                      border-radius: 2px;
+                      display: inline-block;
+                    "
+                  ></span>
+                  <span>removed</span>
+                </div>
+                <div style="display: flex; gap: 4px; align-items: center">
+                  <span
+                    style="
+                      width: 12px;
+                      height: 12px;
+                      background: #f0ad4e;
+                      border-radius: 2px;
+                      display: inline-block;
+                    "
+                  ></span>
+                  <span>filtered</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="form-row">
+          <div>
+            <label for="targets">Target Networks</label>
+            <input
+              type="text"
+              id="targets"
+              placeholder="192.168.1.0/24, 10.0.0.1-50"
+              value="192.168.1.0/24"
+            />
+          </div>
+          <div>
+            <label for="ports">Ports</label>
+            <input
+              type="text"
+              id="ports"
+              placeholder="1-65535, 22,80,443 or ranges"
+              value="1-65535"
+            />
+          </div>
+          <div class="buttons">
+            <button class="btn-primary" onclick="startScan()">Start</button>
+            <button class="btn-danger" onclick="stopScan()">Stop</button>
+          </div>
+        </div>
+        <div class="buttons">
+          <button class="btn-secondary" onclick="clearResults()">
+            Clear Results
+          </button>
+          <button class="btn-secondary" onclick="exportResults()">
+            Export JSON
+          </button>
+          <!-- Permanent DB clear - strong warning -->
+          <button
+            class="btn-danger"
+            onclick="clearDatabase()"
+            title="Permanently delete DB history"
+          >
+            Clear DB
+          </button>
+        </div>
+      </div>
+
+      <div class="status" id="statusPanel">
+        <div><strong>Status:</strong> <span id="statusText">Idle</span></div>
+        <div><strong>Phase:</strong> <span id="phaseText">-</span></div>
+        <div>
+          <strong>Progress:</strong> <span id="progressText">0/0 (0%)</span>
+        </div>
+        <div class="progress">
+          <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- Scheduler controls -->
+      <div class="controls">
+        <div class="form-row">
+          <div>
+            <label for="schedulerTargets">Scheduler Targets</label>
+            <input
+              type="text"
+              id="schedulerTargets"
+              placeholder="192.168.1.0/24"
+              value="192.168.1.0/24"
+            />
+          </div>
+          <div>
+            <label for="schedulerPorts">Scheduler Ports</label>
+            <input
+              type="text"
+              id="schedulerPorts"
+              placeholder="1-1000"
+              value="1-1000"
+            />
+          </div>
+          <div>
+            <label for="intervalMinutes">Interval (min)</label>
+            <input
+              type="number"
+              id="intervalMinutes"
+              placeholder="60"
+              value="60"
+              min="1"
+            />
+          </div>
+          <div class="buttons">
+            <button class="btn-primary" onclick="startScheduler()">
+              Start Scheduler
+            </button>
+            <button class="btn-danger" onclick="stopScheduler()">
+              Stop Scheduler
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scheduler Status -->
+      <div class="status" id="schedulerStatus">
+        <strong>Scheduler Status</strong>
+        <div>Enabled: No</div>
+        <div>Running: No</div>
+        <div>Targets: N/A</div>
+        <div>Ports: N/A</div>
+        <div>Interval: N/A minutes</div>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-number" id="totalHosts">{{ stats.total_hosts }}</div>
+          <div class="stat-label">Hosts</div>
+        </div>
+        <div class="stat">
+          <div class="stat-number" id="totalPorts">{{ stats.total_ports }}</div>
+          <div class="stat-label">Open Ports</div>
+        </div>
+        <div class="stat">
+          <div class="stat-number" id="totalServices">
+            {{ stats.total_services }}
+          </div>
+          <div class="stat-label">Services</div>
+        </div>
+      </div>
+
+      <div class="results">
+        <div class="results-header">Scan Results</div>
+        <div id="resultsContent">
+          {% if hosts %} {% for ip, host in hosts.items() %}
+          <div class="host">
+            <div class="host-header">
+              {{ ip }}{% if host.hostname %} ({{ host.hostname }}){% endif %}
+            </div>
+            {% if host.os_hint or host.mac_address or host.last_seen %}
+            <div class="host-info">
+              {% if host.os_hint %}OS: {{ host.os_hint }} | {% endif %} {% if
+              host.mac_address %}MAC: {{ host.mac_address }} | {% endif %} Last
+              seen: {{ host.last_seen }}
+            </div>
+            {% endif %} {% if host.services %}
+            <div class="services">
+              {% for port, svc in host.services.items() %}
+              <div class="service">
+                <div class="meta">
+                  <div>{{ port }}:</div>
+                  <div>
+                    {% if svc is mapping %} {{ svc.service }} {% else %} {{ svc
+                    }} {% endif %}
+                  </div>
+                </div>
+                <div>
+                  {% if svc is mapping %} {% if svc.status == 'new' %}
+                  <span class="indicator new">✔</span>
+                  {% elif svc.status == 'removed' %}
+                  <span class="indicator removed">✖</span>
+                  {% elif svc.status == 'filtered' %}
+                  <span class="indicator filtered">◐</span>
+                  {% else %}
+                  <span class="indicator ok">●</span>
+                  {% endif %} {% endif %}
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+          {% endfor %} {% else %}
+          <div class="empty">
+            <h3>No Results</h3>
+            <p>Start a scan to discover hosts and services</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let updateInterval;
+
+      function startScan() {
+        const targets = document.getElementById("targets").value;
+        let ports = document.getElementById("ports").value;
+
+        if (!targets.trim()) {
+          alert("Enter target networks");
+          return;
+        }
+
+        // Send ports as-is to server - let server handle batching for large ranges
+        let body = {
+          targets: targets.split(",").map(function (t) {
+            return t.trim();
+          }),
+          ports: ports,
+        };
+
+        fetch("/api/scan/start", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        })
+          .then(function (r) {
+            return r.json();
+          })
+          .then(function (data) {
+            if (data.success) {
+              startUpdates();
+            } else {
+              alert(data.message || "Failed to start scan");
+            }
+          })
+          .catch(function (err) {
+            alert("Error starting scan: " + err);
+          });
+      }
+
+      function stopScan() {
+        fetch("/api/scan/stop", { method: "POST" }).then(function () {
+          if (updateInterval) clearInterval(updateInterval);
+          updateStatus();
+        });
+      }
+
+      function clearResults() {
+        if (confirm("Clear all results?")) {
+          fetch("/api/results/clear", { method: "DELETE" }).then(function () {
+            location.reload();
+          });
+        }
+      }
+
+      function clearDatabase() {
+        const acknowledged = confirm(
+          "WARNING: This will permanently delete all scan history (hosts and results) from the database.\n\n" +
+            "This cannot be undone. Continue?",
+        );
+        if (!acknowledged) return;
+        // call new endpoint to clear DB
+        fetch("/api/db/clear", { method: "DELETE" })
+          .then(function (r) {
+            return r.json();
+          })
+          .then(function (resp) {
+            if (resp && resp.success) {
+              alert("Database cleared. UI will reload.");
+              location.reload();
+            } else {
+              alert("Failed to clear DB: " + (resp.message || "unknown error"));
+            }
+          })
+          .catch(function (err) {
+            alert("Error clearing DB: " + err);
+          });
+      }
+
+      function exportResults() {
+        window.open("/api/results/export", "_blank");
+      }
+
+      function startScheduler() {
+        const targets = document.getElementById("schedulerTargets").value;
+        let ports = document.getElementById("schedulerPorts").value;
+        const interval = document.getElementById("intervalMinutes").value;
+
+        if (!targets.trim()) {
+          alert("Enter target networks for scheduler");
+          return;
+        }
+
+        // Send ports as-is to server - let server handle batching for large ranges
+        let payload = {
+          targets: targets.split(",").map(function (t) {
+            return t.trim();
+          }),
+          interval_minutes: interval,
+          ports: ports,
+        };
+
+        fetch("/api/scheduler/start", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        })
+          .then(function (r) {
+            return r.json();
+          })
+          .then(function (data) {
+            if (data.success) {
+              alert("Scheduler started");
+              updateSchedulerStatus();
+            } else {
+              alert(data.message || "Failed to start scheduler");
+            }
+          })
+          .catch(function (err) {
+            alert("Error starting scheduler: " + err);
+          });
+      }
+
+      function stopScheduler() {
+        fetch("/api/scheduler/stop", { method: "POST" }).then(function () {
+          alert("Scheduler stop requested");
+          updateSchedulerStatus();
+        });
+      }
+
+      function startUpdates() {
+        updateStatus();
+        updateInterval = setInterval(updateStatus, 1000);
+      }
+
+      function updateStatus() {
+        fetch("/api/scan/status")
+          .then(function (r) {
+            if (!r.ok) {
+              throw new Error("Status request failed: " + r.status);
+            }
+            return r.json();
+          })
+          .then(function (status) {
+            console.log("Status update:", status); // Debug logging
+
+            const panel = document.getElementById("statusPanel");
+            const statusText = document.getElementById("statusText");
+            const phaseText = document.getElementById("phaseText");
+            const progressText = document.getElementById("progressText");
+            const progressBar = document.getElementById("progressBar");
+
+            if (status.running) {
+              panel.className = "status running";
+              statusText.textContent = "Running";
+            } else {
+              panel.className = "status idle";
+              statusText.textContent = "Idle";
+              if (updateInterval) {
+                clearInterval(updateInterval);
+                updateInterval = null;
+              }
+            }
+
+            phaseText.textContent = status.current_phase || "idle";
+
+            const progress =
+              status.total > 0 ? (status.progress / status.total) * 100 : 0;
+            progressText.textContent =
+              (status.progress || 0) +
+              "/" +
+              (status.total || 0) +
+              " (" +
+              Math.round(progress) +
+              "%)";
+            progressBar.style.width = progress + "%";
+
+            if (!status.running && status.current_phase === "completed") {
+              setTimeout(function () {
+                location.reload();
+              }, 2000);
+            }
+          })
+          .catch(function (err) {
+            console.error("Status update failed:", err);
+          });
+      }
+
+      function updateSchedulerStatus() {
+        fetch("/api/scheduler/status")
+          .then(function (r) {
+            return r.json();
+          })
+          .then(function (status) {
+            const enabled = status.enabled ? "Yes" : "No";
+            const running = status.running ? "Yes" : "No";
+            const targets = (status.targets || []).join(", ");
+            const ports = status.ports || "N/A";
+            const interval = status.interval_minutes || "N/A";
+
+            const html =
+              "<strong>Scheduler Status</strong>" +
+              "<div>Enabled: " +
+              enabled +
+              "</div>" +
+              "<div>Running: " +
+              running +
+              "</div>" +
+              "<div>Targets: " +
+              targets +
+              "</div>" +
+              "<div>Ports: " +
+              ports +
+              "</div>" +
+              "<div>Interval: " +
+              interval +
+              " minutes</div>";
+
+            document.getElementById("schedulerStatus").innerHTML = html;
+          });
+      }
+
+      // Initialize status updates
+      document.addEventListener("DOMContentLoaded", function () {
+        updateSchedulerStatus();
+      });
+
+      // Auto refresh every 30 seconds
+      setInterval(function () {
+        if (!updateInterval) location.reload();
+      }, 30000);
+    </script>
+  </body>
+</html>
